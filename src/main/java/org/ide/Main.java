@@ -2,13 +2,18 @@ package org.ide;
 
 
 import com.google.gson.*;
+import org.apache.commons.io.FilenameUtils;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -25,11 +30,23 @@ public class Main {
             System.out.println("finished loading languages");
             JFrame frame = new JFrame("IDE Text Editor");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            JMenuBar bar = new JMenuBar();
+            frame.setJMenuBar(bar);
+            JMenu fileMenu = new JMenu("File");
+            JMenu helpMenu = new JMenu("Help");
+            bar.add(fileMenu);
+            bar.add(helpMenu);
+            JMenuItem openMenuItem = new JMenuItem("Open");
+            JMenuItem saveMenuItem = new JMenuItem("Save As");
+            JMenuItem GithubMenuItem = new JMenuItem("Github");
+            helpMenu.add(GithubMenuItem);
+            fileMenu.add(openMenuItem);
+            fileMenu.add(saveMenuItem);
 
             // Create the IdeTextPane and set it as the content pane of the frame
             IdeTextPane ideTextPane = new IdeTextPane();
-            JTextPane textPane = ideTextPane.create("java");
-            JScrollPane scrollPane = new JScrollPane(textPane);
+            final JTextPane[] textPane = {ideTextPane.create("java")};
+            JScrollPane scrollPane = new JScrollPane(textPane[0]);
             frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
 
             // Create a JList with a JButton and add it to the frame
@@ -42,7 +59,43 @@ public class Main {
             panel.add(button, BorderLayout.SOUTH);
             frame.getContentPane().add(panel, BorderLayout.EAST);
 
-            textPane.setText("if else text lmao class object assert");
+            openMenuItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    JFileChooser fileChooser = new JFileChooser();
+                    int option = fileChooser.showOpenDialog(frame);
+                    if (option == JFileChooser.APPROVE_OPTION) {
+                        File selectedFile = fileChooser.getSelectedFile();
+                        frame.getContentPane().remove(textPane[0]);
+                        textPane[0] = ideTextPane.create(FilenameUtils.getExtension(selectedFile.getAbsolutePath()));
+                        textPane[0].setText(FileUtils.read(selectedFile));
+                        frame.getContentPane().add(textPane[0]);
+                    }
+                }
+            });
+            saveMenuItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e){
+                    FileDialog f = new FileDialog(new Frame(), "Save As", FileDialog.SAVE);
+                    f.setMultipleMode(false);
+                    f.setVisible(true);
+                    FileUtils.save(new File(f.getDirectory(), f.getName()), textPane[0].getText());
+
+                }
+            });
+
+            GithubMenuItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e){
+                    try {
+                        Desktop.getDesktop().browse(new URI("https://github.com/tympanicblock61/ide"));
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    } catch (URISyntaxException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            });
 
             frame.setSize(800, 600);
             frame.setVisible(true);
