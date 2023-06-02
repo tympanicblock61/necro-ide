@@ -2,7 +2,6 @@ package org.ide;
 
 import java.awt.*;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import static java.awt.Color.*;
 
@@ -13,6 +12,7 @@ public class Keywords {
     private static final Color DARK_GREEN = GREEN.darker().darker();
     private static final Color DARK_MAGENTA = new Color(127, 0, 85);
     private static final Color NICE_BLUE = new Color(0, 0, 255);
+    private static final Color Dark_Yellow = new Color(107, 95, 12);
     public static Map<String, Color> defaults() {
         Map<String, Color> keywordColorMap = new HashMap<>();
         keywordColorMap.put("assert", DARK_MAGENTA);
@@ -32,6 +32,15 @@ public class Keywords {
         keywordColorMap.put("float", NICE_BLUE);
         keywordColorMap.put("case", DARK_MAGENTA);
         keywordColorMap.put("super", DARK_MAGENTA);
+        keywordColorMap.put("==", Dark_Yellow);
+        keywordColorMap.put("!=", Dark_Yellow);
+        keywordColorMap.put(">=", Dark_Yellow);
+        keywordColorMap.put("<=", Dark_Yellow);
+        keywordColorMap.put(">", Dark_Yellow);
+        keywordColorMap.put("<", Dark_Yellow);
+        keywordColorMap.put("/", Dark_Yellow);
+        keywordColorMap.put("*", Dark_Yellow);
+        keywordColorMap.put("+", Dark_Yellow);
         return keywordColorMap;
     }
 
@@ -102,6 +111,43 @@ public class Keywords {
         keywordColorMap.put("raise", DARK_RED);
         keywordColorMap.put("with", DARK_MAGENTA);
         keywordColorMap.put("yield", DARK_MAGENTA);
+        return keywordColorMap;
+    }
+
+    public static Map<String, Color> Lolcode() {
+        Map<String, Color> keywordColorMap = defaults();
+        keywordColorMap.put("HAI", NICE_BLUE);
+        keywordColorMap.put("CAN HAS", orange);
+        keywordColorMap.put("VISIBLE", DARK_MAGENTA);
+        keywordColorMap.put("GIMMEH", GREEN);
+        keywordColorMap.put("I HAS A", ORANGE);
+        keywordColorMap.put("ITZ", DARK_GREEN);
+        keywordColorMap.put("ITZ LIEK A", DARK_GREEN);
+        keywordColorMap.put("R", DARK_GREEN);
+        keywordColorMap.put("BOTH SAEM", LIGHT_RED);
+        keywordColorMap.put("DIFFRINT", LIGHT_RED);
+        keywordColorMap.put("AN", DARK_MAGENTA);
+        keywordColorMap.put("SMALLR OF", LIGHT_RED);
+        keywordColorMap.put("BIGGR OF", LIGHT_RED);
+        keywordColorMap.put("SUM OF", DARK_MAGENTA);
+        keywordColorMap.put("DIFF OF", DARK_MAGENTA);
+        keywordColorMap.put("PRODUKT OF", DARK_MAGENTA);
+        keywordColorMap.put("QUOSHUNT", DARK_MAGENTA);
+        keywordColorMap.put("MOD OF", Dark_Yellow);
+        keywordColorMap.put("SMOOSH", Dark_Yellow);
+        keywordColorMap.put("MAEK", Dark_Yellow);
+        keywordColorMap.put("IS NOW A", Dark_Yellow);
+        keywordColorMap.put("SRS", Dark_Yellow);
+        keywordColorMap.put("O RLY?", RED);
+        keywordColorMap.put(", WTF?", RED);
+        keywordColorMap.put("OMG", RED);
+        keywordColorMap.put("OMGWTF", RED);
+        keywordColorMap.put("YA RLY", RED);
+        keywordColorMap.put("NO WAI", RED);
+        keywordColorMap.put("OIC", DARK_MAGENTA);
+        keywordColorMap.put("IM IN YR", DARK_MAGENTA);
+        keywordColorMap.put("IM OUTTA YR", DARK_MAGENTA);
+        keywordColorMap.put("KTHXBYE", NICE_BLUE);
         return keywordColorMap;
     }
 
