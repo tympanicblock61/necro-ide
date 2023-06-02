@@ -27,6 +27,10 @@ public class IdeTextPane {
                 keywords = Keywords.Python();
                 commentText = "#";
             }
+            case "lol" -> {
+                keywords = Keywords.Lolcode();
+                commentText = "BTW";
+            }
             default -> {
                 keywords = Keywords.defaults();
                 commentText = "";
