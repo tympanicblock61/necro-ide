@@ -1,5 +1,7 @@
 package org.ide;
 
+import org.jetbrains.annotations.Nullable;
+
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -7,50 +9,38 @@ import javax.swing.text.*;
 import java.awt.*;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
+import static org.ide.Main.languageList;
 
 public class IdeTextPane {
-    private static String commentText;
+    private static String commentText = "";
+    private static Pair<String, String> multiLineCommentText = new Pair<>("", "");
+    private static Map<String, Color> keywords = Language.defaults();
 
     public JTextPane create(@Nullable String fileType) {
         JTextPane textPane = new JTextPane();
         textPane.setEditable(true);
         StyledDocument document = textPane.getStyledDocument();
-        Map<String, Color> keywords;
-
-        switch (fileType != null ? fileType : "") {
-            case "java" -> {
-                keywords = Keywords.Java();
-                commentText = "//";
+        languageList.forEach(language -> {
+            if (language.getFileTypes().contains(fileType)) {
+                keywords = language.keywords;
+                commentText = language.lineComment;
+                multiLineCommentText = language.multilineComment;
             }
-            case "py" -> {
-                keywords = Keywords.Python();
-                commentText = "#";
-            }
-            case "lol" -> {
-                keywords = Keywords.Lolcode();
-                commentText = "BTW";
-            }
-            default -> {
-                keywords = Keywords.defaults();
-                commentText = "";
-            }
-        }
-        Map<String, Color> finalKeywords = keywords;
+        });
         document.addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                SwingUtilities.invokeLater(() -> highlightKeywords(document, finalKeywords));
+                SwingUtilities.invokeLater(() -> highlightKeywords(document, keywords));
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                SwingUtilities.invokeLater(() -> highlightKeywords(document, finalKeywords));
+                SwingUtilities.invokeLater(() -> highlightKeywords(document, keywords));
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                // Not used in this
+
             }
         });
         return textPane;
@@ -62,6 +52,7 @@ public class IdeTextPane {
             highlightAllOccurrences(document, keyword, keywords.get(keyword));
         }
         highlightCommentedLines(document);
+        highlightMultiCommentedLines(document);
     }
 
     private static AttributeSet getAttributeSetWithColor(Color color) {
@@ -89,6 +80,7 @@ public class IdeTextPane {
     }
 
     private static void highlightCommentedLines(StyledDocument document) {
+        if (commentText.length() == 0) return;
         Element root = document.getDefaultRootElement();
         int lineCount = root.getElementCount();
         for (int i = 0; i < lineCount; i++) {
@@ -99,6 +91,46 @@ public class IdeTextPane {
                 String lineText = document.getText(lineStart, lineEnd - lineStart);
                 if (lineText.trim().startsWith(commentText)) {
                     document.setCharacterAttributes(lineStart, lineEnd - lineStart, getAttributeSetWithColor(Color.ORANGE), true);
+                }
+            } catch (BadLocationException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private static void highlightMultiCommentedLines(StyledDocument document) {
+        if (commentText.length() == 0) return;
+        Element root = document.getDefaultRootElement();
+        int lineCount = root.getElementCount();
+        boolean commented = false;
+        for (int i = 0; i < lineCount; i++) {
+            Element line = root.getElement(i);
+            int lineStart = line.getStartOffset();
+            int lineEnd = line.getEndOffset() - 1;
+            int lineLength = lineEnd - lineStart;
+            try {
+                String lineText = document.getText(lineStart, lineLength);
+                int commentStart = lineText.indexOf(multiLineCommentText.first());
+                int commentEnd = lineText.indexOf(multiLineCommentText.second());
+                if (commented) {
+                    if (commentEnd >= 0) {
+                        int commentEndOffset = lineStart + commentEnd + multiLineCommentText.second().length();
+                        int highlightLength = Math.min(commentEndOffset - lineStart, lineLength);
+                        document.setCharacterAttributes(lineStart, highlightLength, getAttributeSetWithColor(Color.ORANGE), true);
+                        commented = false;
+                    } else {
+                        document.setCharacterAttributes(lineStart, lineLength, getAttributeSetWithColor(Color.ORANGE), true);
+                    }
+                }
+                if (commentStart >= 0) {
+                    int commentStartOffset = lineStart + commentStart;
+                    if (commentEnd > commentStart) {
+                        int commentEndOffset = lineStart + commentEnd + multiLineCommentText.second().length();
+                        document.setCharacterAttributes(commentStartOffset, commentEndOffset - commentStartOffset, getAttributeSetWithColor(Color.ORANGE), true);
+                    } else {
+                        commented = true;
+                        document.setCharacterAttributes(commentStartOffset, lineLength - commentStart, getAttributeSetWithColor(Color.ORANGE), true);
+                    }
                 }
             } catch (BadLocationException ex) {
                 ex.printStackTrace();
