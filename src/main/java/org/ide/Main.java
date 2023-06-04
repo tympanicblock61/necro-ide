@@ -44,11 +44,13 @@ public class Main {
             JMenuItem GithubMenuItem = new JMenuItem("Github");
             JMenuItem bgMenuItem = new JMenuItem("Change Background Color");
             JMenuItem txtMenuItem = new JMenuItem("Change Text Color");
+            JMenuItem fontMenuItem = new JMenuItem("Change Font");
             helpMenu.add(GithubMenuItem);
             fileMenu.add(openMenuItem);
             fileMenu.add(saveMenuItem);
             settingMenu.add(bgMenuItem);
             settingMenu.add(txtMenuItem);
+            settingMenu.add(fontMenuItem);
 
             // Create the IdeTextPane and set it as the content pane of the frame
             IdeTextPane ideTextPane = new IdeTextPane();
@@ -119,6 +121,12 @@ public class Main {
                     return null;
                 });
                 picker.setVisible(true);
+            });
+
+            fontMenuItem.addActionListener(e -> {
+                String path = JOptionPane.showInputDialog("Enter Font \n (Fonts stored locally)");
+                Font font = new Font(path,Font.PLAIN,12);
+                textPane[0].setFont(font);
             });
 
             frame.setSize(800, 600);
