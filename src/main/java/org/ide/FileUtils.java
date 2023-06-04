@@ -16,10 +16,12 @@ public class FileUtils {
         return stringBuilder.toString();
     }
 
-    //linux sucks
-
     public static void save(File f, String v){
+<<<<<<< HEAD
+        FileWriter write;
+=======
         FileWriter write = null;
+>>>>>>> origin/master
         try {
             write = new FileWriter(f);
             write.write(v);
