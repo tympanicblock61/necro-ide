@@ -11,11 +11,11 @@ import java.util.function.Function;
 public class ColorPicker extends JFrame {
     private final JPanel colorPanel;
     private Color selectedColor;
-    private ArrayList<Pair<Events, Function<Color, ?>>> events = new ArrayList<>();
+    private final ArrayList<Pair<Events, Function<Color, ?>>> events = new ArrayList<>();
 
     public ColorPicker(Color color, String name) {
         setTitle(name);
-        setSize(300, 200);
+        setSize(300, 300);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 

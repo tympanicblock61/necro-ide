@@ -5,6 +5,7 @@ import com.google.gson.*;
 import org.apache.commons.io.FilenameUtils;
 import org.ide.elements.ColorPicker;
 import org.ide.elements.Events;
+import org.ide.elements.FontPicker;
 import org.ide.elements.IdeTextPane;
 import org.ide.utils.FileUtils;
 import org.ide.utils.Language;
@@ -44,11 +45,13 @@ public class Main {
             JMenuItem GithubMenuItem = new JMenuItem("Github");
             JMenuItem bgMenuItem = new JMenuItem("Change Background Color");
             JMenuItem txtMenuItem = new JMenuItem("Change Text Color");
+            JMenuItem fontMenuItem = new JMenuItem("Change Font");
             helpMenu.add(GithubMenuItem);
             fileMenu.add(openMenuItem);
             fileMenu.add(saveMenuItem);
             settingMenu.add(bgMenuItem);
             settingMenu.add(txtMenuItem);
+            settingMenu.add(fontMenuItem);
 
             // Create the IdeTextPane and set it as the content pane of the frame
             IdeTextPane ideTextPane = new IdeTextPane();
@@ -85,6 +88,7 @@ public class Main {
                     System.out.println(FilenameUtils.getExtension(selectedFile.getAbsolutePath()));
                 }
             });
+
             saveMenuItem.addActionListener(e -> {
                 FileDialog f = new FileDialog(new Frame(), "Save As", FileDialog.SAVE);
                 f.setMultipleMode(false);
@@ -112,7 +116,7 @@ public class Main {
             });
 
             txtMenuItem.addActionListener(e -> {
-                ColorPicker picker = new ColorPicker(textPane[0].getBackground(), "Change Text Color");
+                ColorPicker picker = new ColorPicker(textPane[0].getForeground(), "Change Text Color");
                 picker.setColor(textPane[0].getForeground());
                 picker.addEvent(Events.Save, color -> {
                     textPane[0].setForeground(color);
@@ -121,6 +125,15 @@ public class Main {
                 picker.setVisible(true);
             });
 
+            fontMenuItem.addActionListener(e -> {
+                FontPicker pickers = new FontPicker(new Font(Font.DIALOG, Font.PLAIN, 12), "Change Font");
+                pickers.setFont(textPane[0].getFont());
+                pickers.addEvent(Events.Save, font -> {
+                    textPane[0].setFont(font);
+                    return null;
+                });
+                pickers.setVisible(true);
+            });
             frame.setSize(800, 600);
             frame.setVisible(true);
         });
