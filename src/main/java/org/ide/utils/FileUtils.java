@@ -1,4 +1,4 @@
-package org.ide;
+package org.ide.utils;
 
 import java.io.*;
 
@@ -11,7 +11,7 @@ public class FileUtils {
                 stringBuilder.append(line).append("\n");
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            return "";
         }
         return stringBuilder.toString();
     }
@@ -23,7 +23,7 @@ public class FileUtils {
             write.write(v);
             write.close();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println("could not save file "+f.getName());
         }
 
     }

@@ -1,4 +1,4 @@
-package org.ide;
+package org.ide.elements;
 
 public enum Events {
     Change,

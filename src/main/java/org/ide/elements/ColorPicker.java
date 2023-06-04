@@ -1,4 +1,6 @@
-package org.ide;
+package org.ide.elements;
+
+import org.ide.utils.Pair;
 
 import javax.swing.*;
 import java.awt.*;

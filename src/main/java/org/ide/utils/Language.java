@@ -1,4 +1,6 @@
-package org.ide;
+package org.ide.utils;
+
+import org.ide.utils.Pair;
 
 import java.awt.Color;
 import java.util.ArrayList;

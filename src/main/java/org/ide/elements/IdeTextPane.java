@@ -1,4 +1,6 @@
-package org.ide;
+package org.ide.elements;
+
+import org.ide.utils.Pair;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -7,7 +9,7 @@ import javax.swing.text.*;
 import java.awt.*;
 import java.util.Map;
 
-import static org.ide.Language.defaults;
+import static org.ide.utils.Language.defaults;
 import static org.ide.Main.languageList;
 
 public class IdeTextPane {

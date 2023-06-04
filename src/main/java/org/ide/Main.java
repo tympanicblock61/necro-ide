@@ -3,19 +3,22 @@ package org.ide;
 
 import com.google.gson.*;
 import org.apache.commons.io.FilenameUtils;
+import org.ide.elements.ColorPicker;
+import org.ide.elements.Events;
+import org.ide.elements.IdeTextPane;
+import org.ide.utils.FileUtils;
+import org.ide.utils.Language;
+import org.ide.utils.Pair;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Main {
 
@@ -50,8 +53,6 @@ public class Main {
             // Create the IdeTextPane and set it as the content pane of the frame
             IdeTextPane ideTextPane = new IdeTextPane();
             final JTextPane[] textPane = {ideTextPane.create("")};
-            JScrollPane scrollPane = new JScrollPane(textPane[0]);
-            JTextPane textPane[0] = ideTextPane.create("java");
             JScrollPane scrollPane = new JScrollPane(textPane[0]);
             frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
 
@@ -118,7 +119,6 @@ public class Main {
                 });
                 picker.setVisible(true);
             });
-            textPane.setText("if else text lmao class object assert");
 
             frame.setSize(800, 600);
             frame.setVisible(true);
@@ -131,43 +131,26 @@ public class Main {
             if (files != null) {
                 for (File file : files) {
                     if (file.getName().endsWith(".json")) {
-                        try (FileReader fileReader = new FileReader(file);
-                             BufferedReader bufferedReader = new BufferedReader(fileReader)) {
-                            StringBuilder json = new StringBuilder();
-                            String line;
-                            while ((line = bufferedReader.readLine()) != null) {
-                                json.append(line);
+                        String json = FileUtils.read(file);
+                        JsonObject data = jsonParser.fromJson(json, JsonObject.class);
+                        try {
+                            String name = data.get("name").getAsString();
+                            String comment = data.get("comment").getAsString();
+                            Pair<String, String> multilineComment = new Pair<>(data.get("multiline").getAsJsonArray().get(0).getAsString(), data.get("multiline").getAsJsonArray().get(1).getAsString());
+                            boolean defaults = data.get("defaults").getAsBoolean();
+                            Language language = new Language(name, comment, multilineComment, defaults);
+                            for (JsonElement element : data.get("files").getAsJsonArray()) {
+                                language.addFileType(element.getAsString());
                             }
-                            JsonObject data = jsonParser.fromJson(json.toString(), JsonObject.class);
-                            try {
-                                String name = data.get("name").getAsString();
-                                String comment = data.get("comment").getAsString();
-                                Pair<String, String> multilineComment = new Pair<>(
-                                        data.get("multiline").getAsJsonArray().get(0).getAsString(),
-                                        data.get("multiline").getAsJsonArray().get(1).getAsString()
-                                );
-                                boolean defaults = data.get("defaults").getAsBoolean();
-                                Language language = new Language(name, comment, multilineComment, defaults);
-                                for (JsonElement element : data.get("files").getAsJsonArray()) {
-                                    language.addFileType(element.getAsString());
-                                }
-                                for (JsonElement element : data.get("keywords").getAsJsonArray()) {
-                                    JsonObject obj = element.getAsJsonObject();
-                                    JsonArray color = obj.get("color").getAsJsonArray();
-                                    Color keywordColor = new Color(
-                                            color.get(0).getAsInt(),
-                                            color.get(1).getAsInt(),
-                                            color.get(2).getAsInt(),
-                                            color.get(3).getAsInt()
-                                    );
-                                    language.keywords.put(obj.get("key").getAsString(), keywordColor);
-                                }
-                                System.out.println("loaded the language "+language.name);
-                                languageList.add(language);
-                            } catch (JsonIOException ignored) {
-                                System.out.println(file.getName() + " is not a valid JSON file");
+                            for (JsonElement element : data.get("keywords").getAsJsonArray()) {
+                                JsonObject obj = element.getAsJsonObject();
+                                JsonArray color = obj.get("color").getAsJsonArray();
+                                Color keywordColor = new Color(color.get(0).getAsInt(), color.get(1).getAsInt(), color.get(2).getAsInt(), color.get(3).getAsInt());
+                                language.keywords.put(obj.get("key").getAsString(), keywordColor);
                             }
-                        } catch (IOException | JsonSyntaxException | JsonIOException ignored) {
+                            System.out.println("loaded the language "+language.name);
+                            languageList.add(language);
+                        } catch (JsonIOException ignored) {
                             System.out.println(file.getName() + " is not a valid JSON file");
                         }
                     }
