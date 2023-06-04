@@ -20,11 +20,9 @@ public class Language {
     public Map<String, Color> keywords;
     private List<String> fileTypes = new ArrayList<>();
     private static final Pattern fileExtensionPattern = Pattern.compile("^(?!.*[<>:\"/\\\\|?*])[A-Za-z0-9]+$");
-
     public String name;
     public String lineComment;
     public Pair<String, String> multilineComment;
-
     public Language(String name, String lineComment, Pair<String, String> multilineComment, boolean useDefaults) {
         this.name = name;
         this.lineComment = lineComment;
@@ -33,18 +31,14 @@ public class Language {
             keywords = defaults();
         }
     }
-
     public void addFileType(String extension) {
         if (fileExtensionPattern.matcher(extension).matches()) {
             fileTypes.add(extension);
         }
     }
-
     public List<String> getFileTypes() {
         return fileTypes;
     }
-    
-    
     public static Map<String, Color> defaults() {
         Map<String, Color> keywordColorMap = new HashMap<>();
         keywordColorMap.put("assert", DARK_MAGENTA);
