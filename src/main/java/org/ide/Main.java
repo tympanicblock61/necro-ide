@@ -51,8 +51,8 @@ public class Main {
             IdeTextPane ideTextPane = new IdeTextPane();
             final JTextPane[] textPane = {ideTextPane.create("")};
             JScrollPane scrollPane = new JScrollPane(textPane[0]);
-            JTextPane textPane = ideTextPane.create("java");
-            JScrollPane scrollPane = new JScrollPane(textPane);
+            JTextPane textPane[0] = ideTextPane.create("java");
+            JScrollPane scrollPane = new JScrollPane(textPane[0]);
             frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
 
             // Create a JList with a JButton and add it to the frame
