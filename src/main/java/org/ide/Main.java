@@ -15,7 +15,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Main {
 
@@ -51,8 +50,8 @@ public class Main {
             IdeTextPane ideTextPane = new IdeTextPane();
             final JTextPane[] textPane = {ideTextPane.create("")};
             JScrollPane scrollPane = new JScrollPane(textPane[0]);
-            JTextPane textPane[0] = ideTextPane.create("java");
-            JScrollPane scrollPane = new JScrollPane(textPane[0]);
+            textPane[0] = ideTextPane.create("java");
+            scrollPane = new JScrollPane(textPane[0]);
             frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
 
             // Create a JList with a JButton and add it to the frame
@@ -65,6 +64,7 @@ public class Main {
             panel.add(button, BorderLayout.SOUTH);
             frame.getContentPane().add(panel, BorderLayout.EAST);
 
+            JScrollPane finalScrollPane = scrollPane;
             openMenuItem.addActionListener(e -> {
                 JFileChooser fileChooser = new JFileChooser();
                 int option = fileChooser.showOpenDialog(frame);
@@ -72,14 +72,14 @@ public class Main {
                     File selectedFile = fileChooser.getSelectedFile();
                     Color bg = textPane[0].getBackground();
                     Color fg = textPane[0].getForeground();
-                    scrollPane.remove(textPane[0]);
+                    finalScrollPane.remove(textPane[0]);
                     textPane[0] = ideTextPane.create(FilenameUtils.getExtension(selectedFile.getAbsolutePath()));
                     textPane[0].setText(FileUtils.read(selectedFile));
                     textPane[0].setBackground(bg);
                     textPane[0].setForeground(fg);
-                    scrollPane.setViewportView(textPane[0]);
-                    scrollPane.revalidate();
-                    scrollPane.repaint();
+                    finalScrollPane.setViewportView(textPane[0]);
+                    finalScrollPane.revalidate();
+                    finalScrollPane.repaint();
                     System.out.println(FilenameUtils.getExtension(selectedFile.getAbsolutePath()));
                 }
             });
@@ -118,8 +118,6 @@ public class Main {
                 });
                 picker.setVisible(true);
             });
-            textPane.setText("if else text lmao class object assert");
-
             frame.setSize(800, 600);
             frame.setVisible(true);
         });
