@@ -78,6 +78,7 @@ public class Main {
                     textPane[0].setText(FileUtils.read(selectedFile));
                     textPane[0].setBackground(bg);
                     textPane[0].setForeground(fg);
+                    textPane[0].setCaretColor(fg);
                     scrollPane.setViewportView(textPane[0]);
                     scrollPane.revalidate();
                     scrollPane.repaint();
