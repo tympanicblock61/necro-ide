@@ -1,7 +1,5 @@
 package org.ide;
 
-import org.jetbrains.annotations.Nullable;
-
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -9,19 +7,26 @@ import javax.swing.text.*;
 import java.awt.*;
 import java.util.Map;
 
+import static org.ide.Language.defaults;
 import static org.ide.Main.languageList;
 
 public class IdeTextPane {
-    private static String commentText = "";
-    private static Pair<String, String> multiLineCommentText = new Pair<>("", "");
-    private static Map<String, Color> keywords = Language.defaults();
 
-    public JTextPane create(@Nullable String fileType) {
+    private static String commentText;
+    private static Pair<String, String> multiLineCommentText;
+    private static Map<String, Color> keywords;
+
+    public JTextPane create(String fileType) {
         JTextPane textPane = new JTextPane();
         textPane.setEditable(true);
         StyledDocument document = textPane.getStyledDocument();
+        keywords = defaults();
+        commentText = "";
+        multiLineCommentText = new Pair<>("","");
         languageList.forEach(language -> {
             if (language.getFileTypes().contains(fileType)) {
+                System.out.println(fileType);
+                System.out.println(language);
                 keywords = language.keywords;
                 commentText = language.lineComment;
                 multiLineCommentText = language.multilineComment;
@@ -40,9 +45,10 @@ public class IdeTextPane {
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-
+                //s
             }
         });
+
         return textPane;
     }
 
@@ -99,7 +105,7 @@ public class IdeTextPane {
     }
 
     private static void highlightMultiCommentedLines(StyledDocument document) {
-        if (commentText.length() == 0) return;
+        if (multiLineCommentText.first().length() == 0 && multiLineCommentText.second().length() == 0) return;
         Element root = document.getDefaultRootElement();
         int lineCount = root.getElementCount();
         boolean commented = false;
