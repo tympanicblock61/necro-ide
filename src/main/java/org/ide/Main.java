@@ -32,6 +32,7 @@ public class Main {
             System.out.println("finished loading languages");
             JFrame frame = new JFrame("IDE Text Editor");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setIconImage(Toolkit.getDefaultToolkit().getImage(Main.class.getResource("/icon64.png")));
             JMenuBar bar = new JMenuBar();
             frame.setJMenuBar(bar);
             JMenu fileMenu = new JMenu("File");
