@@ -7,6 +7,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Hashtable;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -52,14 +53,45 @@ public class FontPicker extends JFrame{
             }
         });
 
+        final int FONT_MIN = 8;
+        final int FONT_MAX = 56;
+        final int FONT_INIT = 12;
         label = new JLabel("Preview of current font");
         fontName = new JLabel("");
         JButton button = new JButton("Save");
         button.setPreferredSize(new Dimension(50, 50));
         JPanel leftPanel = new JPanel(new BorderLayout());
+        JSlider fontSize = new JSlider(JSlider.HORIZONTAL, FONT_MIN, FONT_MAX, FONT_INIT);
         leftPanel.add(label, BorderLayout.NORTH);
         leftPanel.add(fontName, BorderLayout.CENTER);
         leftPanel.add(button, BorderLayout.SOUTH);
+        leftPanel.add(fontSize, BorderLayout.AFTER_LINE_ENDS);
+        fontSize.setMajorTickSpacing(20);
+        fontSize.setMinorTickSpacing(2);
+        fontSize.setPaintTicks(true);
+        Hashtable labelTable = new Hashtable();
+        labelTable.put( new Integer( FONT_MIN ), new JLabel("8") );
+        labelTable.put( new Integer( FONT_MAX ), new JLabel("56") );
+        fontSize.setLabelTable( labelTable );
+        fontSize.setPaintLabels(true);
+
+        fontSize.addChangeListener(e -> {
+            int selectedFontSize = fontSize.getValue();
+            Font[] updatedFonts = Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts())
+                    .map(fnt -> fnt.deriveFont((float) selectedFontSize))
+                    .toArray(Font[]::new);
+            list.setListData(Arrays.stream(updatedFonts).map(Font::getName).toArray(String[]::new));
+            fonts = updatedFonts;
+            if (currentFont != null) {
+                Optional<Font> findFont = Arrays.stream(fonts).filter(fnt -> fnt.getFontName().equals(currentFont.getFontName())).findFirst();
+                if (findFont.isPresent()) {
+                    currentFont = findFont.get();
+                    label.setFont(currentFont);
+                    fontName.setText(currentFont.getFontName());
+                }
+            }
+        });
+
         button.addActionListener(e -> {
             if (currentFont != null) {
                 events.forEach(event -> {
@@ -77,7 +109,7 @@ public class FontPicker extends JFrame{
         if (containsFont(fonts, font)) {
             currentFont = font;
         } else {
-            currentFont = new Font(Font.DIALOG, Font.PLAIN, 12);
+            currentFont = new Font(Font.DIALOG, Font.PLAIN, fontSize.getValue());
         }
         label.setFont(currentFont);
         fontName.setText(currentFont.getFontName());
@@ -104,10 +136,10 @@ public class FontPicker extends JFrame{
         if (currentFont == null) {
             events.forEach(event -> {
                 if (event.first() == Events.Get) {
-                    event.second().apply(new Font(Font.DIALOG, Font.PLAIN, 12));
+                    event.second().apply(new Font(Font.DIALOG, Font.PLAIN, currentFont.getSize()));
                 }
             });
-            return new Font(Font.DIALOG, Font.PLAIN, 12);
+            return new Font(Font.DIALOG, Font.PLAIN, currentFont.getSize());
         } else {
             events.forEach(event -> {
                 if (event.first() == Events.Get) {
