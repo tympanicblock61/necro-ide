@@ -91,8 +91,6 @@ public class FontPicker extends JFrame{
             }
         });
 
-        list.setLayoutOrientation(JList.VERTICAL_WRAP);
-
         button.addActionListener(e -> {
             if (currentFont != null) {
                 events.forEach(event -> {
