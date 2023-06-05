@@ -56,7 +56,7 @@ public class FontPicker extends JFrame{
         final int FONT_MIN = 8;
         final int FONT_MAX = 56;
         final int FONT_INIT = 12;
-        label = new JLabel("Preview of current font");
+        label = new JLabel("<html><body style='width: 200px'>Preview of current font</body></html>");
         fontName = new JLabel("");
         JButton button = new JButton("Save");
         button.setPreferredSize(new Dimension(50, 50));
@@ -70,8 +70,8 @@ public class FontPicker extends JFrame{
         fontSize.setMinorTickSpacing(2);
         fontSize.setPaintTicks(true);
         Hashtable labelTable = new Hashtable();
-        labelTable.put( new Integer( FONT_MIN ), new JLabel("8") );
-        labelTable.put( new Integer( FONT_MAX ), new JLabel("56") );
+        labelTable.put(FONT_MIN , new JLabel(String.valueOf(FONT_MIN)));
+        labelTable.put(FONT_MAX, new JLabel(String.valueOf(FONT_MAX)));
         fontSize.setLabelTable( labelTable );
         fontSize.setPaintLabels(true);
 
@@ -80,7 +80,6 @@ public class FontPicker extends JFrame{
             Font[] updatedFonts = Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts())
                     .map(fnt -> fnt.deriveFont((float) selectedFontSize))
                     .toArray(Font[]::new);
-            list.setListData(Arrays.stream(updatedFonts).map(Font::getName).toArray(String[]::new));
             fonts = updatedFonts;
             if (currentFont != null) {
                 Optional<Font> findFont = Arrays.stream(fonts).filter(fnt -> fnt.getFontName().equals(currentFont.getFontName())).findFirst();
@@ -91,6 +90,8 @@ public class FontPicker extends JFrame{
                 }
             }
         });
+
+        list.setLayoutOrientation(JList.VERTICAL_WRAP);
 
         button.addActionListener(e -> {
             if (currentFont != null) {
