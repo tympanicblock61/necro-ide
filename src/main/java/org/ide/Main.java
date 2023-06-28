@@ -13,13 +13,13 @@ import org.ide.utils.Pair;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class Main {
 
@@ -136,7 +136,73 @@ public class Main {
                 pickers.setVisible(true);
             });
             frame.setSize(800, 600);
+
+            if (new File("config.json").exists()){
+                JsonParser jsonParser = new JsonParser();
+                BufferedReader load = null;
+                try {
+                    load = new BufferedReader(new FileReader(new File("config.json")));
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+                JsonObject json = (JsonObject) jsonParser.parse(load);
+                try {
+                    load.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                Gson gson = new Gson();
+                Map<String, Object> data = gson.fromJson(json, Map.class);
+                Map<String, Object> BackgroundColor = (Map<String, Object>) data.get("BackgroundColor");
+                int r = ((Number) BackgroundColor.get("R")).intValue();
+                int g = ((Number) BackgroundColor.get("G")).intValue();
+                int b = ((Number) BackgroundColor.get("B")).intValue();
+                int a = ((Number) BackgroundColor.get("A")).intValue();
+                textPane[0].setBackground(new Color(r,g,b,a));
+
+                Map<String, Object> font = (Map<String, Object>) data.get("Font");
+                String fontName = (String) font.get("FontName");
+                int fontSize = ((Number) font.get("FontSize")).intValue();
+                int r2 = ((Number) font.get("R")).intValue();
+                int g2 = ((Number) font.get("G")).intValue();
+                int b2 = ((Number) font.get("B")).intValue();
+                int a2 = ((Number) font.get("A")).intValue();
+                textPane[0].setForeground(new Color(r2,b2,g2,a2));
+                textPane[0].setFont(new Font(fontName, Font.PLAIN, fontSize));
+            }
+
             frame.setVisible(true);
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                Color BackgroundColor = textPane[0].getBackground();
+                Color ForegroundColor = textPane[0].getForeground();
+                Font TextFont = textPane[0].getFont();
+                JsonObject ConfigJson = new JsonObject();
+                JsonObject BackgroundJson = new JsonObject();
+                JsonObject FontJson = new JsonObject();
+                BackgroundJson.addProperty("R", BackgroundColor.getRed());
+                BackgroundJson.addProperty("B", BackgroundColor.getBlue());
+                BackgroundJson.addProperty("G", BackgroundColor.getGreen());
+                BackgroundJson.addProperty("A", BackgroundColor.getAlpha());
+                ConfigJson.add("BackgroundColor", BackgroundJson);
+                FontJson.addProperty("FontName", TextFont.getName());
+                FontJson.addProperty("FontSize", TextFont.getSize());
+                FontJson.addProperty("R", ForegroundColor.getRed());
+                FontJson.addProperty("G", ForegroundColor.getBlue());
+                FontJson.addProperty("B", ForegroundColor.getGreen());
+                FontJson.addProperty("A", ForegroundColor.getAlpha());
+                ConfigJson.add("Font", FontJson);
+
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                PrintWriter w = null;
+                try {
+                    w = new PrintWriter(new File("config.json"));
+                    w.println(gson.toJson(ConfigJson));
+                    w.close();
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }));
         });
     }
     public static void loadLanguages() {
