@@ -24,7 +24,7 @@ public class IdeTextPane {
         StyledDocument document = textPane.getStyledDocument();
         keywords = defaults();
         commentText = "";
-        multiLineCommentText = new Pair<>("","");
+        multiLineCommentText = new Pair<>("", "");
         languageList.forEach(language -> {
             if (language.getFileTypes().contains(fileType)) {
                 System.out.println(fileType);
@@ -37,7 +37,10 @@ public class IdeTextPane {
         document.addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                SwingUtilities.invokeLater(() -> highlightKeywords(document, keywords));
+                SwingUtilities.invokeLater(() -> {
+                    highlightKeywords(document, keywords);
+                    suggestKeyword(document, keywords);
+                });
             }
 
             @Override
@@ -52,6 +55,33 @@ public class IdeTextPane {
         });
 
         return textPane;
+    }
+
+    private static void suggestKeyword(StyledDocument document, Map<String, Color> keywords) {
+        Element root = document.getDefaultRootElement();
+
+        int numLines = root.getElementCount();
+        for (int i = 0; i < numLines; i++) {
+            Element line = root.getElement(i);
+            int lineStart = line.getStartOffset();
+            int lineEnd = line.getEndOffset();
+            String lineText = null;
+            try {
+                lineText = document.getText(lineStart, lineEnd - lineStart);
+            } catch (BadLocationException e) {
+                throw new RuntimeException(e);
+            }
+
+            String[] words = lineText.split("\\s+");
+            for (String word : words) {
+                for (Map.Entry<String, Color> entry : keywords.entrySet()) {
+                    if (entry.getKey().length() <= 2) return;
+                    if (word.equals(entry.getKey().substring(0,2))) {
+                        System.out.println("Keyword predicted: " + entry.getKey());
+                    }
+                }
+            }
+        }
     }
 
     private static void highlightKeywords(StyledDocument document, Map<String, Color> keywords) {

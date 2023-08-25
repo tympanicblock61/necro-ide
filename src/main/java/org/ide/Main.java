@@ -100,7 +100,7 @@ public class Main {
 
             GithubMenuItem.addActionListener(e -> {
                 try {
-                    Desktop.getDesktop().browse(new URI("https://github.com/tympanicblock61/ide"));
+                    Desktop.getDesktop().browse(new URI("https://github.com/tympanicblock61/necro-ide"));
                 } catch (IOException | URISyntaxException ex) {
                     throw new RuntimeException(ex);
                 }
