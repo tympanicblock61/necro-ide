@@ -5,24 +5,19 @@ import org.ide.utils.Pair;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 public class FontPicker extends JFrame{
-
     private Font currentFont;
     public static Font[] fonts = Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts()).map(font -> font.deriveFont(12f)).toArray(Font[]::new);
     private final ArrayList<Pair<Events, Function<Font, ?>>> events = new ArrayList<>();
     private JLabel label;
     private JLabel fontName;
+    private final JSlider fontSize;
     public static boolean containsFont(Font[] fonts, Font targetFont) {
         for (Font font : fonts) {
-            if (font.equals(targetFont)) {
-                return true;
-            }
+            if (font.equals(targetFont)) return true;
         }
         return false;
     }
@@ -58,18 +53,18 @@ public class FontPicker extends JFrame{
         final int FONT_INIT = 12;
         label = new JLabel("<html><body style='width: 200px'>Preview of current font</body></html>");
         fontName = new JLabel("");
-        JButton button = new JButton("Save");
-        button.setPreferredSize(new Dimension(50, 50));
+        JButton saveButton = new JButton("Save");
+        saveButton.setPreferredSize(new Dimension(50, 50));
         JPanel leftPanel = new JPanel(new BorderLayout());
-        JSlider fontSize = new JSlider(JSlider.HORIZONTAL, FONT_MIN, FONT_MAX, FONT_INIT);
+        fontSize = new JSlider(JSlider.HORIZONTAL, FONT_MIN, FONT_MAX, FONT_INIT);
         leftPanel.add(label, BorderLayout.NORTH);
         leftPanel.add(fontName, BorderLayout.CENTER);
-        leftPanel.add(button, BorderLayout.SOUTH);
+        leftPanel.add(saveButton, BorderLayout.SOUTH);
         leftPanel.add(fontSize, BorderLayout.AFTER_LINE_ENDS);
         fontSize.setMajorTickSpacing(20);
         fontSize.setMinorTickSpacing(2);
         fontSize.setPaintTicks(true);
-        Hashtable labelTable = new Hashtable();
+        Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
         labelTable.put(FONT_MIN , new JLabel(String.valueOf(FONT_MIN)));
         labelTable.put(FONT_MAX, new JLabel(String.valueOf(FONT_MAX)));
         fontSize.setLabelTable( labelTable );
@@ -77,10 +72,7 @@ public class FontPicker extends JFrame{
 
         fontSize.addChangeListener(e -> {
             int selectedFontSize = fontSize.getValue();
-            Font[] updatedFonts = Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts())
-                    .map(fnt -> fnt.deriveFont((float) selectedFontSize))
-                    .toArray(Font[]::new);
-            fonts = updatedFonts;
+            fonts = Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts()).map(fnt1 -> fnt1.deriveFont((float) selectedFontSize)).toArray(Font[]::new);
             if (currentFont != null) {
                 Optional<Font> findFont = Arrays.stream(fonts).filter(fnt -> fnt.getFontName().equals(currentFont.getFontName())).findFirst();
                 if (findFont.isPresent()) {
@@ -91,12 +83,10 @@ public class FontPicker extends JFrame{
             }
         });
 
-        button.addActionListener(e -> {
+        saveButton.addActionListener(e -> {
             if (currentFont != null) {
                 events.forEach(event -> {
-                    if (event.first() == Events.Save) {
-                        event.second().apply(currentFont);
-                    }
+                    if (event.first() == Events.Save) event.second().apply(currentFont);
                 });
             }
             dispose();
@@ -105,11 +95,8 @@ public class FontPicker extends JFrame{
         mainPanel.add(leftPanel, BorderLayout.WEST);
         mainPanel.add(new JScrollPane(list), BorderLayout.CENTER);
         add(mainPanel);
-        if (containsFont(fonts, font)) {
-            currentFont = font;
-        } else {
-            currentFont = new Font(Font.DIALOG, Font.PLAIN, fontSize.getValue());
-        }
+        if (containsFont(fonts, font)) currentFont = font;
+        else currentFont = new Font(Font.DIALOG, Font.PLAIN, fontSize.getValue());
         label.setFont(currentFont);
         fontName.setText(currentFont.getFontName());
     }
@@ -119,31 +106,23 @@ public class FontPicker extends JFrame{
     }
 
     public void setFont(Font font) {
-        try {
-            currentFont = font;
-            label.setFont(currentFont);
-            fontName.setText(currentFont.getFontName());
-            events.forEach(event -> {
-                if (event.first() == Events.Set) {
-                    event.second().apply(currentFont);
-                }
-            });
-        } catch(Exception ignored) {}
+        currentFont = font;
+        label.setFont(currentFont);
+        fontName.setText(currentFont.getFontName());
+        events.forEach(event -> {
+            if (event.first() == Events.Set) event.second().apply(currentFont);
+        });
     }
 
     public Font getFont() {
         if (currentFont == null) {
             events.forEach(event -> {
-                if (event.first() == Events.Get) {
-                    event.second().apply(new Font(Font.DIALOG, Font.PLAIN, currentFont.getSize()));
-                }
+                if (event.first() == Events.Get) event.second().apply(new Font(Font.DIALOG, Font.PLAIN, fontSize.getValue()));
             });
-            return new Font(Font.DIALOG, Font.PLAIN, currentFont.getSize());
+            return new Font(Font.DIALOG, Font.PLAIN, fontSize.getValue());
         } else {
             events.forEach(event -> {
-                if (event.first() == Events.Get) {
-                    event.second().apply(currentFont);
-                }
+                if (event.first() == Events.Get) event.second().apply(currentFont);
             });
             return currentFont;
         }
@@ -155,9 +134,7 @@ public class FontPicker extends JFrame{
             Component renderer = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             String item = (String) value;
             for (Font font : fonts) {
-                if (font.getFontName().equals(item)) {
-                    renderer.setFont(font);
-                }
+                if (font.getFontName().equals(item)) renderer.setFont(font);
             }
             ((JLabel) renderer).setBorder(new EmptyBorder(2, 5, 2, 5));
             return renderer;

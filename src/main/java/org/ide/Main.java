@@ -3,28 +3,28 @@ package org.ide;
 
 import com.google.gson.*;
 import org.apache.commons.io.FilenameUtils;
-import org.ide.elements.ColorPicker;
-import org.ide.elements.Events;
-import org.ide.elements.FontPicker;
-import org.ide.elements.IdeTextPane;
+import org.ide.elements.*;
+import org.ide.utils.ColorUtils;
 import org.ide.utils.FileUtils;
 import org.ide.utils.Language;
 import org.ide.utils.Pair;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Map;
 
 public class Main {
 
     public static Path currentPath = Paths.get("").toAbsolutePath();
-    public static Gson jsonParser = new Gson();
+    public static File langs = new File(currentPath.toFile(), "languages");
+    public static File config = new File(currentPath.toFile(), "config.json");
+    public static Gson gson = new Gson();
     public static ArrayList<Language> languageList = new ArrayList<>();
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -47,12 +47,15 @@ public class Main {
             JMenuItem bgMenuItem = new JMenuItem("Change Background Color");
             JMenuItem txtMenuItem = new JMenuItem("Change Text Color");
             JMenuItem fontMenuItem = new JMenuItem("Change Font");
+            JMenuItem suggestionsMenuItem = new JMenuItem("Do Suggestions");
             helpMenu.add(GithubMenuItem);
             fileMenu.add(openMenuItem);
             fileMenu.add(saveMenuItem);
             settingMenu.add(bgMenuItem);
             settingMenu.add(txtMenuItem);
             settingMenu.add(fontMenuItem);
+            settingMenu.add(suggestionsMenuItem);
+            
 
             // Create the IdeTextPane and set it as the content pane of the frame
             IdeTextPane ideTextPane = new IdeTextPane();
@@ -135,40 +138,24 @@ public class Main {
                 });
                 pickers.setVisible(true);
             });
+
+            suggestionsMenuItem.addActionListener(e -> ideTextPane.setDoSuggestions(!ideTextPane.isDoSuggestions()));
+
             frame.setSize(800, 600);
 
-            if (new File("config.json").exists()){
-                JsonParser jsonParser = new JsonParser();
-                BufferedReader load = null;
-                try {
-                    load = new BufferedReader(new FileReader(new File("config.json")));
-                } catch (FileNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-                JsonObject json = (JsonObject) jsonParser.parse(load);
-                try {
-                    load.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                Gson gson = new Gson();
-                Map<String, Object> data = gson.fromJson(json, Map.class);
-                Map<String, Object> BackgroundColor = (Map<String, Object>) data.get("BackgroundColor");
-                int r = ((Number) BackgroundColor.get("R")).intValue();
-                int g = ((Number) BackgroundColor.get("G")).intValue();
-                int b = ((Number) BackgroundColor.get("B")).intValue();
-                int a = ((Number) BackgroundColor.get("A")).intValue();
-                textPane[0].setBackground(new Color(r,g,b,a));
-
-                Map<String, Object> font = (Map<String, Object>) data.get("Font");
-                String fontName = (String) font.get("FontName");
-                int fontSize = ((Number) font.get("FontSize")).intValue();
-                int r2 = ((Number) font.get("R")).intValue();
-                int g2 = ((Number) font.get("G")).intValue();
-                int b2 = ((Number) font.get("B")).intValue();
-                int a2 = ((Number) font.get("A")).intValue();
-                textPane[0].setForeground(new Color(r2,b2,g2,a2));
-                textPane[0].setFont(new Font(fontName, Font.PLAIN, fontSize));
+            if (config.exists()){
+                String file = FileUtils.read(config);
+                JsonObject data = gson.fromJson(file, JsonObject.class);
+                int fore = data.get("foreground").getAsInt();
+                int back = data.get("background").getAsInt();
+                JsonObject font = data.getAsJsonObject("font");
+                String name = font.get("name").getAsString();
+                int size = font.get("size").getAsInt();
+                boolean doSuggestions = data.get("suggestions").getAsBoolean();
+                textPane[0].setForeground(new Color(fore, true));
+                textPane[0].setBackground(new Color(back, true));
+                textPane[0].setFont(new Font(name, Font.PLAIN, size));
+                ideTextPane.setDoSuggestions(doSuggestions);
             }
 
             frame.setVisible(true);
@@ -178,42 +165,26 @@ public class Main {
                 Color ForegroundColor = textPane[0].getForeground();
                 Font TextFont = textPane[0].getFont();
                 JsonObject ConfigJson = new JsonObject();
-                JsonObject BackgroundJson = new JsonObject();
-                JsonObject FontJson = new JsonObject();
-                BackgroundJson.addProperty("R", BackgroundColor.getRed());
-                BackgroundJson.addProperty("B", BackgroundColor.getBlue());
-                BackgroundJson.addProperty("G", BackgroundColor.getGreen());
-                BackgroundJson.addProperty("A", BackgroundColor.getAlpha());
-                ConfigJson.add("BackgroundColor", BackgroundJson);
-                FontJson.addProperty("FontName", TextFont.getName());
-                FontJson.addProperty("FontSize", TextFont.getSize());
-                FontJson.addProperty("R", ForegroundColor.getRed());
-                FontJson.addProperty("G", ForegroundColor.getBlue());
-                FontJson.addProperty("B", ForegroundColor.getGreen());
-                FontJson.addProperty("A", ForegroundColor.getAlpha());
-                ConfigJson.add("Font", FontJson);
-
+                ConfigJson.addProperty("foreground", ColorUtils.colorToHex(ForegroundColor));
+                ConfigJson.addProperty("background", ColorUtils.colorToHex(BackgroundColor));
+                ConfigJson.addProperty("suggestions", ideTextPane.isDoSuggestions());
+                JsonObject Font = new JsonObject();
+                Font.addProperty("name", TextFont.getName());
+                Font.addProperty("size", TextFont.getSize());
+                ConfigJson.add("font", Font);
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                PrintWriter w = null;
-                try {
-                    w = new PrintWriter(new File("config.json"));
-                    w.println(gson.toJson(ConfigJson));
-                    w.close();
-                } catch (FileNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
+                FileUtils.save(config, gson.toJson(ConfigJson));
             }));
         });
     }
     public static void loadLanguages() {
-        File langs = new File(currentPath.toFile(), "languages");
         if (langs.exists() && langs.isDirectory()) {
             File[] files = langs.listFiles();
             if (files != null) {
                 for (File file : files) {
                     if (file.getName().endsWith(".json")) {
                         String json = FileUtils.read(file);
-                        JsonObject data = jsonParser.fromJson(json, JsonObject.class);
+                        JsonObject data = gson.fromJson(json, JsonObject.class);
                         try {
                             String name = data.get("name").getAsString();
                             String comment = data.get("comment").getAsString();

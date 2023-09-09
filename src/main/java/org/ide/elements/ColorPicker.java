@@ -29,17 +29,13 @@ public class ColorPicker extends JFrame {
             if (selectedColor != null) {
                 colorPanel.setBackground(selectedColor);
                 events.forEach(event -> {
-                    if (event.first() == Events.Change) {
-                        event.second().apply(selectedColor);
-                    }
+                    if (event.first() == Events.Change) event.second().apply(selectedColor);
                 });
             }
         });
 
         saveButton.addActionListener(e -> events.forEach(event -> {
-            if (selectedColor != null && event.first() == Events.Save) {
-                event.second().apply(selectedColor);
-            }
+            if (selectedColor != null && event.first() == Events.Save) event.second().apply(selectedColor);
             dispose();
         }));
 
@@ -54,30 +50,22 @@ public class ColorPicker extends JFrame {
     }
 
     public void setColor(Color color) {
-        try {
-            selectedColor = color;
-            colorPanel.setBackground(color);
-            events.forEach(event -> {
-                if (event.first() == Events.Set) {
-                    event.second().apply(selectedColor);
-                }
-            });
-        } catch(Exception ignored) {}
+        selectedColor = color;
+        colorPanel.setBackground(color);
+        events.forEach(event -> {
+            if (event.first() == Events.Set) event.second().apply(selectedColor);
+        });
     }
 
     public Color getColor() {
         if (selectedColor == null) {
             events.forEach(event -> {
-                if (event.first() == Events.Get) {
-                    event.second().apply(Color.WHITE);
-                }
+                if (event.first() == Events.Get) event.second().apply(Color.WHITE);
             });
             return Color.WHITE;
         } else {
             events.forEach(event -> {
-                if (event.first() == Events.Get) {
-                    event.second().apply(selectedColor);
-                }
+                if (event.first() == Events.Get) event.second().apply(selectedColor);
             });
             return selectedColor;
         }

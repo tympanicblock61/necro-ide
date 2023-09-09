@@ -16,15 +16,16 @@ public class FileUtils {
         return stringBuilder.toString();
     }
     
-    public static void save(File f, String v){
+    public static boolean save(File f, String v){
         FileWriter write;
         try {
             write = new FileWriter(f);
             write.write(v);
             write.close();
+            return true;
         } catch (IOException e) {
             System.out.println("could not save file "+f.getName());
+            return false;
         }
-
     }
 }

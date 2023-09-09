@@ -7,21 +7,30 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.*;
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import static org.ide.utils.Language.defaults;
 import static org.ide.Main.languageList;
+import static org.ide.utils.Language.defaults;
 
 public class IdeTextPane {
-
     private static String commentText;
     private static Pair<String, String> multiLineCommentText;
     private static Map<String, Color> keywords;
+    private static StyledDocument document;
+    private static JTextPane textPane;
+    public static suggestPanel suggestPanel;
+    private static int lastY;
+    private static int lastX;
+    private boolean doSuggestions = false;
 
     public JTextPane create(String fileType) {
-        JTextPane textPane = new JTextPane();
+        textPane = new JTextPane();
         textPane.setEditable(true);
-        StyledDocument document = textPane.getStyledDocument();
+        document = textPane.getStyledDocument();
         keywords = defaults();
         commentText = "";
         multiLineCommentText = new Pair<>("", "");
@@ -38,59 +47,96 @@ public class IdeTextPane {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 SwingUtilities.invokeLater(() -> {
-                    highlightKeywords(document, keywords);
-                    suggestKeyword(document, keywords);
+                    highlightKeywords();
+                    if (doSuggestions) suggestKeyword();
                 });
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                SwingUtilities.invokeLater(() -> highlightKeywords(document, keywords));
+                SwingUtilities.invokeLater(() -> {
+                    if (suggestPanel.isVisible()) suggestPanel.setVisible(false);
+                    highlightKeywords();
+                });
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                //s
+                //unused
             }
         });
+
+        textPane.addCaretListener(e -> {
+            int caretPosition = e.getDot();
+            try {
+                Rectangle2D caretRectangle = textPane.modelToView2D(caretPosition);
+                lastX = (int)caretRectangle.getX();
+                lastY = (int) caretRectangle.getY();
+            } catch (BadLocationException ignored) {}
+        });
+
+        suggestPanel = new suggestPanel();
+        textPane.add(suggestPanel);
 
         return textPane;
     }
 
-    private static void suggestKeyword(StyledDocument document, Map<String, Color> keywords) {
-        Element root = document.getDefaultRootElement();
-
-        int numLines = root.getElementCount();
-        for (int i = 0; i < numLines; i++) {
-            Element line = root.getElement(i);
-            int lineStart = line.getStartOffset();
-            int lineEnd = line.getEndOffset();
-            String lineText = null;
-            try {
-                lineText = document.getText(lineStart, lineEnd - lineStart);
-            } catch (BadLocationException e) {
-                throw new RuntimeException(e);
-            }
-
-            String[] words = lineText.split("\\s+");
-            for (String word : words) {
-                for (Map.Entry<String, Color> entry : keywords.entrySet()) {
-                    if (entry.getKey().length() <= 2) return;
-                    if (word.equals(entry.getKey().substring(0,2))) {
-                        System.out.println("Keyword predicted: " + entry.getKey());
-                    }
-                }
-            }
-        }
+    public void setDoSuggestions(boolean value) {
+        doSuggestions = value;
     }
 
-    private static void highlightKeywords(StyledDocument document, Map<String, Color> keywords) {
-        document.setCharacterAttributes(0, document.getLength(), document.getStyle(StyleContext.DEFAULT_STYLE), true);
-        for (String keyword : keywords.keySet()) {
-            highlightAllOccurrences(document, keyword, keywords.get(keyword));
+    public boolean isDoSuggestions() {
+        return doSuggestions;
+    }
+
+    private static void suggestKeyword() {
+        boolean found = false;
+        int start = textPane.getCaretPosition();
+        Deque<Character> reversedChars = new StringBuilder(getLineText()).reverse().chars().mapToObj(c -> (char) c).collect(Collectors.toCollection(ArrayDeque::new));
+        StringBuilder word = new StringBuilder();
+        while (!reversedChars.isEmpty()) {
+            char character = reversedChars.pollFirst();
+            if (!Character.isWhitespace(character) && character != '{' && character != '}' && character != '(' && character != ')'){
+                word.append(character);
+            } else break;
         }
-        highlightCommentedLines(document);
-        highlightMultiCommentedLines(document);
+        String toComplete = word.reverse().toString();
+        if(word.isEmpty()) {
+            if(suggestPanel.isVisible()) suggestPanel.setVisible(false);
+            System.out.println("EMPTY");
+            return;
+        }
+        suggestPanel.setLocation(lastX, lastY);
+        suggestPanel.removeAll();
+        for (Map.Entry<String, Color> entry : keywords.entrySet()) {
+            if (entry.getKey().startsWith(toComplete) && !(entry.getKey().equals(toComplete)) && !toComplete.isEmpty()) {
+                found = true;
+                JButton button = new JButton(entry.getKey());
+                button.setSize(new Dimension(100, 50));
+                button.setForeground(entry.getValue());
+                button.addActionListener(e -> {
+                    removeAndInsert(start, toComplete.length(), entry.getKey(), entry.getValue());
+                    int newPos = (start-toComplete.length())+entry.getKey().length();
+                    textPane.setCaretPosition(newPos);
+                    suggestPanel.setVisible(false);
+                });
+                button.setVisible(true);
+                suggestPanel.add(button);
+                System.out.println(entry.getValue());
+            }
+        }
+        System.out.println(found);
+        if (!found) suggestPanel.setVisible(false);
+        else suggestPanel.setVisible(true);
+    }
+
+    private static void highlightKeywords() {
+        document.setCharacterAttributes(0, document.getLength(), document.getStyle(StyleContext.DEFAULT_STYLE), true);
+        for (Map.Entry<String, Color> entry : keywords.entrySet()) {
+            highlightAllOccurrences(entry.getKey(), entry.getValue());
+        }
+        highlightCommentedLines();
+        highlightMultiCommentedLines();
     }
 
     private static AttributeSet getAttributeSetWithColor(Color color) {
@@ -99,14 +145,8 @@ public class IdeTextPane {
         return attributeSet;
     }
 
-    private static void highlightAllOccurrences(StyledDocument document, String text, Color color) {
-        String documentText;
-        try {
-            documentText = document.getText(0, document.getLength());
-        } catch (BadLocationException ex) {
-            ex.printStackTrace();
-            return;
-        }
+    private static void highlightAllOccurrences(String text, Color color) {
+        String documentText = getText(document,0, document.getLength());
         int index = -1;
         while ((index = documentText.indexOf(text, index + 1)) != -1) {
             boolean validSurrounding = isSurroundedByValidCharacters(documentText, index, text.length());
@@ -117,27 +157,21 @@ public class IdeTextPane {
         }
     }
 
-    private static void highlightCommentedLines(StyledDocument document) {
-        if (commentText.length() == 0) return;
+    private static void highlightCommentedLines() {
+        if (commentText.isEmpty()) return;
         Element root = document.getDefaultRootElement();
         int lineCount = root.getElementCount();
         for (int i = 0; i < lineCount; i++) {
             Element line = root.getElement(i);
             int lineStart = line.getStartOffset();
             int lineEnd = line.getEndOffset() - 1;
-            try {
-                String lineText = document.getText(lineStart, lineEnd - lineStart);
-                if (lineText.trim().startsWith(commentText)) {
-                    document.setCharacterAttributes(lineStart, lineEnd - lineStart, getAttributeSetWithColor(Color.ORANGE), true);
-                }
-            } catch (BadLocationException ex) {
-                ex.printStackTrace();
-            }
+            String lineText = getText(document, lineStart, lineEnd - lineStart);
+            if (lineText.trim().startsWith(commentText)) document.setCharacterAttributes(lineStart, lineEnd - lineStart, getAttributeSetWithColor(Color.ORANGE), true);
         }
     }
 
-    private static void highlightMultiCommentedLines(StyledDocument document) {
-        if (multiLineCommentText.first().length() == 0 && multiLineCommentText.second().length() == 0) return;
+    private static void highlightMultiCommentedLines() {
+        if (multiLineCommentText.first().isEmpty() && multiLineCommentText.second().isEmpty()) return;
         Element root = document.getDefaultRootElement();
         int lineCount = root.getElementCount();
         boolean commented = false;
@@ -146,32 +180,28 @@ public class IdeTextPane {
             int lineStart = line.getStartOffset();
             int lineEnd = line.getEndOffset() - 1;
             int lineLength = lineEnd - lineStart;
-            try {
-                String lineText = document.getText(lineStart, lineLength);
-                int commentStart = lineText.indexOf(multiLineCommentText.first());
-                int commentEnd = lineText.indexOf(multiLineCommentText.second());
-                if (commented) {
-                    if (commentEnd >= 0) {
-                        int commentEndOffset = lineStart + commentEnd + multiLineCommentText.second().length();
-                        int highlightLength = Math.min(commentEndOffset - lineStart, lineLength);
-                        document.setCharacterAttributes(lineStart, highlightLength, getAttributeSetWithColor(Color.ORANGE), true);
-                        commented = false;
-                    } else {
-                        document.setCharacterAttributes(lineStart, lineLength, getAttributeSetWithColor(Color.ORANGE), true);
-                    }
+            String lineText = getText(document, lineStart, lineLength);
+            int commentStart = lineText.indexOf(multiLineCommentText.first());
+            int commentEnd = lineText.indexOf(multiLineCommentText.second());
+            if (commented) {
+                if (commentEnd >= 0) {
+                    int commentEndOffset = lineStart + commentEnd + multiLineCommentText.second().length();
+                    int highlightLength = Math.min(commentEndOffset - lineStart, lineLength);
+                    document.setCharacterAttributes(lineStart, highlightLength, getAttributeSetWithColor(Color.ORANGE), true);
+                    commented = false;
+                } else {
+                    document.setCharacterAttributes(lineStart, lineLength, getAttributeSetWithColor(Color.ORANGE), true);
                 }
-                if (commentStart >= 0) {
-                    int commentStartOffset = lineStart + commentStart;
-                    if (commentEnd > commentStart) {
-                        int commentEndOffset = lineStart + commentEnd + multiLineCommentText.second().length();
-                        document.setCharacterAttributes(commentStartOffset, commentEndOffset - commentStartOffset, getAttributeSetWithColor(Color.ORANGE), true);
-                    } else {
-                        commented = true;
-                        document.setCharacterAttributes(commentStartOffset, lineLength - commentStart, getAttributeSetWithColor(Color.ORANGE), true);
-                    }
+            }
+            if (commentStart >= 0) {
+                int commentStartOffset = lineStart + commentStart;
+                if (commentEnd > commentStart) {
+                    int commentEndOffset = lineStart + commentEnd + multiLineCommentText.second().length();
+                    document.setCharacterAttributes(commentStartOffset, commentEndOffset - commentStartOffset, getAttributeSetWithColor(Color.ORANGE), true);
+                } else {
+                    commented = true;
+                    document.setCharacterAttributes(commentStartOffset, lineLength - commentStart, getAttributeSetWithColor(Color.ORANGE), true);
                 }
-            } catch (BadLocationException ex) {
-                ex.printStackTrace();
             }
         }
     }
@@ -181,8 +211,8 @@ public class IdeTextPane {
         int afterIndex = startIndex + keywordLength;
         char charBefore = beforeIndex >= 0 ? text.charAt(beforeIndex) : '\0';
         char charAfter = afterIndex < text.length() ? text.charAt(afterIndex) : '\0';
-        boolean isValidBefore = Character.isWhitespace(charBefore) || charBefore == '}' || charBefore == ')' || charBefore == '\0';
-        boolean isValidAfter = Character.isWhitespace(charAfter) || charAfter == '{' || charAfter == '(' || charAfter == '\0';
+        boolean isValidBefore = Character.isWhitespace(charBefore) || charBefore == '}' || charBefore == ')' || charBefore == '.' ||charBefore == '\0';
+        boolean isValidAfter = Character.isWhitespace(charAfter) || charAfter == '{' || charAfter == '(' || charAfter == '.' || charAfter == '\0';
         return isValidBefore && isValidAfter;
     }
 
@@ -203,18 +233,37 @@ public class IdeTextPane {
     }
 
     private static boolean isLineCommented(String text, int keywordIndex) {
-        if (commentText.length() == 0) return false;
+        if (commentText.isEmpty()) return false;
         int lineStartIndex = getLineStartIndex(text, keywordIndex);
         if (lineStartIndex >= 0 && lineStartIndex < text.length()) {
             for (int i = 0; i < commentText.length(); i++) {
                 char commentChar = commentText.charAt(i);
                 int commentCharIndex = lineStartIndex + i;
-                if (commentCharIndex < text.length() && text.charAt(commentCharIndex) != commentChar) {
-                    return false;
-                }
+                if (commentCharIndex < text.length() && text.charAt(commentCharIndex) != commentChar) return false;
             }
             return true;
         }
         return false;
+    }
+
+    private static String getLineText() {
+        Element line = document.getParagraphElement(textPane.getCaretPosition());
+        int lineStart = line.getStartOffset();
+        return getText(line.getDocument(), lineStart, textPane.getCaretPosition()-lineStart);
+    }
+
+    private static String getText(Document document, int start, int end) {
+        try {
+            return document.getText(start, end);
+        } catch(BadLocationException ignored) {
+            return "";
+        }
+    }
+
+    private static void removeAndInsert(int start, int startOffset, String string,  Color color) {
+        try {
+            document.remove(start - startOffset, startOffset);
+            document.insertString(start - startOffset, string, getAttributeSetWithColor(color));
+        } catch (BadLocationException ignored) {}
     }
 }
