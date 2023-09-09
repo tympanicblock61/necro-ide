@@ -22,7 +22,7 @@ public class IdeTextPane {
     private static Map<String, Color> keywords;
     private static StyledDocument document;
     private static JTextPane textPane;
-    public static suggestPanel suggestPanel;
+    private static suggestPanel suggestPanel;
     private static int lastY;
     private static int lastX;
     private boolean doSuggestions = false;
@@ -36,8 +36,6 @@ public class IdeTextPane {
         multiLineCommentText = new Pair<>("", "");
         languageList.forEach(language -> {
             if (language.getFileTypes().contains(fileType)) {
-                System.out.println(fileType);
-                System.out.println(language);
                 keywords = language.keywords;
                 commentText = language.lineComment;
                 multiLineCommentText = language.multilineComment;
@@ -89,6 +87,10 @@ public class IdeTextPane {
         return doSuggestions;
     }
 
+    public suggestPanel getSuggestPanel() {
+        return suggestPanel;
+    }
+
     private static void suggestKeyword() {
         boolean found = false;
         int start = textPane.getCaretPosition();
@@ -103,7 +105,6 @@ public class IdeTextPane {
         String toComplete = word.reverse().toString();
         if(word.isEmpty()) {
             if(suggestPanel.isVisible()) suggestPanel.setVisible(false);
-            System.out.println("EMPTY");
             return;
         }
         suggestPanel.setLocation(lastX, lastY);
@@ -122,12 +123,9 @@ public class IdeTextPane {
                 });
                 button.setVisible(true);
                 suggestPanel.add(button);
-                System.out.println(entry.getValue());
             }
         }
-        System.out.println(found);
-        if (!found) suggestPanel.setVisible(false);
-        else suggestPanel.setVisible(true);
+        suggestPanel.setVisible(found);
     }
 
     private static void highlightKeywords() {

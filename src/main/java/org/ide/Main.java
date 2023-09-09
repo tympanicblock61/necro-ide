@@ -84,12 +84,12 @@ public class Main {
                     textPane[0] = ideTextPane.create(FilenameUtils.getExtension(selectedFile.getAbsolutePath()));
                     textPane[0].setText(FileUtils.read(selectedFile));
                     textPane[0].setBackground(bg);
+                    ideTextPane.getSuggestPanel().setBackground(bg.brighter());
                     textPane[0].setForeground(fg);
                     textPane[0].setCaretColor(fg);
                     scrollPane.setViewportView(textPane[0]);
                     scrollPane.revalidate();
                     scrollPane.repaint();
-                    System.out.println(FilenameUtils.getExtension(selectedFile.getAbsolutePath()));
                 }
             });
 
@@ -113,6 +113,7 @@ public class Main {
                 ColorPicker picker = new ColorPicker(textPane[0].getBackground(), "Change Background Color");
                 picker.setColor(textPane[0].getBackground());
                 picker.addEvent(Events.Save, color -> {
+                    ideTextPane.getSuggestPanel().setBackground(color.brighter());
                     textPane[0].setBackground(color);
                     return null;
                 });
@@ -155,6 +156,7 @@ public class Main {
                 textPane[0].setForeground(new Color(fore, true));
                 textPane[0].setBackground(new Color(back, true));
                 textPane[0].setFont(new Font(name, Font.PLAIN, size));
+                ideTextPane.getSuggestPanel().setBackground(new Color(back, true).brighter());
                 ideTextPane.setDoSuggestions(doSuggestions);
             }
 
